@@ -1,0 +1,6 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+Salmon/.snakemake
+Salmon/salmon_partial_sa_index

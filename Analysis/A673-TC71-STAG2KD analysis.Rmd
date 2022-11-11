@@ -1,0 +1,107 @@
+---
+title: "STAG2KD Analyis for A673 and TC71 Cell Lines."
+author: "Trent Gutierrez"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: lumen
+    code_folding: hide
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r Packages, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(BiocManager)
+library(RColorBrewer)
+library(pheatmap)
+library(DT)
+library(DESeq2)
+library(fgsea)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(styler)
+library(kableExtra)
+library(fgsea)
+library(stats)
+library(clusterProfiler)
+library(enrichplot)
+library(org.Hs.eg.db)
+library(devtools)
+library(conflicted)
+library(stringr)
+library(fgsea)
+library(data.table)
+library(biomaRt)
+library(EnhancedVolcano)
+library(readr)
+library(tximport)
+library(tximeta)
+library(SummarizedExperiment)
+library(pathview)
+library(gage)
+library(gageData)
+library(styler)
+library(lintr)
+library(ensembldb)
+library(EnsDb.Hsapiens.v86)
+library(plyr)
+library(limma)
+library(ggnewscale)
+```
+
+```{r include=FALSE, setup,}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+```{r Tximport set up, message=FALSE, warning=FALSE, include=FALSE, cache= TRUE}
+samples <- read.table(file.path("Analysis/SraRunTable.txt"), sep = ",", header = TRUE) %>%
+  dplyr::mutate(cell_line = ifelse(grepl("A673", x = source_name), "A673", "TC71")) %>%
+  dplyr::mutate(condition = ifelse(grepl("WT|siCT", x = GENOTYPE), "Control", "Treatment"))
+
+salmon_files <- file.path("Samlmon", samples$Run, "quant.sf") %>%
+  setNames(object = , samples$Run)
+
+ensdb <- EnsDb.Hsapiens.v86
+
+transcripts <- transcripts(ensdb, columns = c(listColumns(ensdb, "tx"), "gene_name"),
+  return.type = "data.frame") %>%
+  as_tibble() %>%
+  dplyr::select(tx_id, gene_name) 
+
+txi <- tximport(salmon_files, type = "salmon", tx2gene = transcripts, ignoreTxVersion = TRUE)
+
+ddstxi <- DESeqDataSetFromTximport(txi, colData = samples, design = ~condition)
+```
+
+```{r PCA Plot, message=FALSE, warning=FALSE}
+vst <- vst(ddstxi)
+
+plotPCA(vst, intgroup = c("genotype", "cell_line"))
+```
+
+```{r metadata, echo=TRUE, message=FALSE, warning=FALSE}
+metadata <- colData(ddstxi)
+
+metadata %>% 
+  as.data.frame() %>%
+  dplyr::select(genotype, condition) %>%
+  kbl(caption = "Table 1: Sample Overview") %>%
+  kable_styling(bootstrap_options = "striped", full_width = T, html_font = "Cambria")
+```
+
+```{r DESeq2, message=FALSE, warning=FALSE, cache= TRUE}
+dds <- DESeq(ddstxi)
+
+```
+
+
+
+
+
+

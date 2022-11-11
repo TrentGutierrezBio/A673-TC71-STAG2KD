@@ -1,0 +1,10 @@
+{
+    "salmon_version": "1.9.0",
+    "libType": "A",
+    "mates1": "fastp/out.SRR9326182_1.fastq",
+    "mates2": "fastp/out.SRR9326182_2.fastq",
+    "validateMappings": [],
+    "index": "salmon_partial_sa_index/default/",
+    "output": "salmon.out/SRR9326182",
+    "auxDir": "aux_info"
+}

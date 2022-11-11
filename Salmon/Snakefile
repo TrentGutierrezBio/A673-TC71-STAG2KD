@@ -1,0 +1,38 @@
+rule prefetch:
+    output:
+        temp("samples/{sample}/{sample}.sra")
+    params:
+        In="{sample}",
+        Out="samples/"
+    shell:
+        "prefetch {params.In} -O {params.Out}"
+rule fasterq_dump:
+    input:  
+        "samples/{sample}/{sample}.sra"
+    output:
+        temp("fastq/{sample}_1.fastq"), 
+        temp("fastq/{sample}_2.fastq")
+    shell:
+        "fasterq-dump {input} -p -O fastq/"
+rule fastp:
+    input:
+        R1="fastq/{sample}_1.fastq",
+        R2="fastq/{sample}_2.fastq"
+    output:
+        temp("fastp/out.{sample}_1.fastq"),
+        temp("fastp/out.{sample}_2.fastq")
+    params:
+        outR1="fastp/out.{sample}_1.fastq",
+        outR2="fastp/out.{sample}_2.fastq"
+    shell:
+        "fastp -i {input.R1} -I {input.R2} -o {params.outR1} -O {params.outR2}"
+rule salmon_quant:
+    input:
+        R1="fastp/out.{sample}_1.fastq",
+        R2="fastp/out.{sample}_2.fastq"    
+    output:
+        "salmon.out/{sample}/quant.sf"
+    params:
+        output="salmon.out/{sample}"     
+    shell:
+        "salmon quant -l A -1 {input.R1} -2 {input.R2} --validateMapping -i salmon_partial_sa_index/default/ -o {params.output}"
