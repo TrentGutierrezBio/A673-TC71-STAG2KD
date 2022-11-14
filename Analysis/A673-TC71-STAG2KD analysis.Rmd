@@ -58,6 +58,22 @@ library(ggnewscale)
 knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 ```
 
+# Introduction
+
+## Research Questions
+
+What is STAG2? What should we expect if we knocked out STAG2 from a cell? 
+
+STAG2 is a important subunit in the cohesin complex that plays an important role in regulating sister chromatid alignment during cell division, and other genetic regulatory functions. Studies show that STAG2-mut EWS have higher rates of metastatic disease and worse outcomes. It is expected that the TC71 & A673 cell lines will have differing phenotype effects to STAG2 KO, for example STAG2 deletion will lead to TC71 growth defect but with A673 it will lead to a growth advantage. STAG1 levels could also increase, in order to possibly fill in for the removal of STAG2 in the cell cycle, a decrease of RAD21 is also observed. The cohesin complex also mediates intrachromosomal interactions including those conjoining enhancers to promoters. Loss of STAG2 produces highly consistent and stable transcriptional changes that may undergo selection to confer a competitive advantage. Two neurodvelopmental transcription factors, POU3F2 and NR2F1 were consistently upregulated in STAG2 KO studies. (Adane et al, 2022) 
+
+
+
+## Data input: 
+
+All samples are downloaded from the SRA Run Selector BioProject PRJNA549593, slight quality control via fastp was conducted and then the reads were aligned using Salmon for Transcript-level quantification files. The metadata for the samples was provided from the SRA Run Selector also. 3 sample comparisons was conducted using 
+1. SA2 KO vs WT in A673 cells
+2. SA2 KO vs WT in TC71 cells
+3. SA2 KO in TC71 cells VS A673 cells. 
 
 ```{r Tximport set up, message=FALSE, warning=FALSE, cache=FALSE}
 samples <- read.table(file.path("Analysis/SraRunTable.txt"), sep = ",", header = TRUE) %>%
@@ -70,7 +86,7 @@ A673_samples <- samples %>%
 TC71_samples <- samples %>%
   dplyr::filter(GENOTYPE %in% c("SA2 KO", "WT") & cell_line == "TC71")
 
-S2KO_samples <- samples %>%
+SA2KO_samples <- samples %>%
   dplyr::filter(GENOTYPE == "SA2 KO")
 
 A673_salmon_files <- file.path("Salmon/salmon.out", A673_samples$Run, "quant.sf") %>%
@@ -79,8 +95,8 @@ A673_salmon_files <- file.path("Salmon/salmon.out", A673_samples$Run, "quant.sf"
 TC71_salmon_files <- file.path("Salmon/salmon.out", TC71_samples$Run, "quant.sf") %>%
   setNames(object = , TC71_samples$Run)
 
-S2KO_salmon_files <- file.path("Salmon/salmon.out", S2KO_samples$Run, "quant.sf") %>%
-  setNames(object = , S2KO_samples$Run)
+SA2KO_salmon_files <- file.path("Salmon/salmon.out", SA2KO_samples$Run, "quant.sf") %>%
+  setNames(object = , SA2KO_samples$Run)
 
 ensdb <- EnsDb.Hsapiens.v86
 
@@ -93,13 +109,13 @@ A673_txi <- tximport(A673_salmon_files, type = "salmon", tx2gene = transcripts, 
 
 TC71_txi <- tximport(TC71_salmon_files, type = "salmon", tx2gene = transcripts, ignoreTxVersion = TRUE)
 
-S2KO_txi <- tximport(S2KO_salmon_files, type = "salmon", tx2gene = transcripts, ignoreTxVersion = TRUE)
+SA2KO_txi <- tximport(SA2KO_salmon_files, type = "salmon", tx2gene = transcripts, ignoreTxVersion = TRUE)
 
 A673_dds_txi <- DESeqDataSetFromTximport(A673_txi, colData = A673_samples, design = ~condition)
 
 TC71_dds_txi <- DESeqDataSetFromTximport(TC71_txi, colData = TC71_samples, design = ~condition)
 
-S2KO_dds_txi <- DESeqDataSetFromTximport(S2KO_txi, colData = S2KO_samples, design = ~cell_line)
+SA2KO_dds_txi <- DESeqDataSetFromTximport(SA2KO_txi, colData = SA2KO_samples, design = ~cell_line)
 ```
 
 ## Exploratory Data
@@ -112,7 +128,7 @@ vst <- vst(A673_dds_txi)
 A673_PCA <- plotPCA(vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
 A673_percentVar <- round(100 * attr(A673_PCA, "percentVar"))
 
-ggplot(A673_PCA, aes(PC1,PC2, color = GENOTYPE)) +
+ggplot(A673_PCA, aes(PC1, PC2, color = GENOTYPE)) +
   geom_point(size = 3) +
   ggtitle("PCA Plot for A673 STAG2KO samples" ) +
   xlab(paste0("PC1: ", A673_percentVar[1], "% variance")) +
@@ -129,7 +145,7 @@ TC71_vst <- vst(TC71_dds_txi)
 TC71_PCA <- plotPCA(TC71_vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
 TC71_percentVar <- round(100 * attr(TC71_PCA, "percentVar"))
 
-ggplot(TC71_PCA, aes(PC1,PC2, color = GENOTYPE)) +
+ggplot(TC71_PCA, aes(PC1, PC2, color = GENOTYPE)) +
   geom_point(size = 3) +
   ggtitle("PCA Plot for TC71 STAG2KO samples" ) +
   xlab(paste0("PC1: ", A673_percentVar[1], "% variance")) +
@@ -140,16 +156,16 @@ ggplot(TC71_PCA, aes(PC1,PC2, color = GENOTYPE)) +
 ### All STAG2KO Samples PCA Plot
 
 ```{r all STAG2KO sample PCA plot, message=FALSE, warning=FALSE}
-S2KO_vst <- vst(S2KO_dds_txi)
+SA2KO_vst <- vst(SA2KO_dds_txi)
 
-S2KO_PCA <- plotPCA(S2KO_vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
-S2KO_percentVar <- round(100 * attr(S2KO_PCA, "percentVar"))
+SA2KO_PCA <- plotPCA(SA2KO_vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
+SA2KO_percentVar <- round(100 * attr(SA2KO_PCA, "percentVar"))
 
-ggplot(S2KO_PCA, aes(PC1,PC2, color = cell_line)) +
+ggplot(SA2KO_PCA, aes(PC1, PC2, color = cell_line)) +
   geom_point(size = 3) +
   ggtitle("PCA Plot for All STAG2KO samples" ) +
-  xlab(paste0("PC1: ", S2KO_percentVar[1], "% variance")) +
-  ylab(paste0("PC2: ", S2KO_percentVar[2], "% variance")) +
+  xlab(paste0("PC1: ", SA2KO_percentVar[1], "% variance")) +
+  ylab(paste0("PC2: ", SA2KO_percentVar[2], "% variance")) +
   coord_fixed() 
 ```
 
@@ -160,7 +176,7 @@ A673_metadata <- colData(A673_dds_txi)
 
 TC71_metadata <- colData(TC71_dds_txi)
 
-all_metadata <- rbind(A673_metadata,TC71_metadata)
+all_metadata <- rbind(A673_metadata, TC71_metadata)
 
 all_metadata %>% 
   as.data.frame() %>%
@@ -174,7 +190,7 @@ A673_dds <- DESeq(A673_dds_txi)
 
 TC71_dds <- DESeq(TC71_dds_txi)
 
-S2KO_dds <- DESeq(S2KO_dds_txi)
+SA2KO_dds <- DESeq(SA2KO_dds_txi)
 ```
 
 # Results
@@ -198,9 +214,9 @@ TC71_sig_ordered_result <- as.data.frame(TC71_result) %>%
 ```
 
 ```{r all STAG2KO samples result extraction, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE}
-S2KO_result <- results(S2KO_dds, contrast = c("cell_line", "TC71", "A673"))
+SA2KO_result <- results(SA2KO_dds, contrast = c("cell_line", "TC71", "A673"))
 
-S2KO_sig_ordered_result <- as.data.frame(S2KO_result) %>%
+SA2KO_sig_ordered_result <- as.data.frame(SA2KO_result) %>%
   rownames_to_column(var = "Gene_name") %>%
   dplyr::filter(padj <0.05) %>%
   dplyr::arrange(desc(stat))
@@ -243,15 +259,15 @@ EnhancedVolcano(TC71_sig_ordered_result,
 ### all STAG2KO samples Volcano Plot
 
 ```{r all STAG2 KO  EnhancedVolcano plot, warning=FALSE, fig.dim = c(9,9)}
-EnhancedVolcano(S2KO_sig_ordered_result, 
-                lab = S2KO_sig_ordered_result$Gene_name, 
+EnhancedVolcano(SA2KO_sig_ordered_result, 
+                lab = SA2KO_sig_ordered_result$Gene_name, 
                 x = "log2FoldChange", 
                 y = "pvalue", 
                 title =  "Siginifcant Genes for between the STAG2KO samples in A673 and TC71 cell lines",
                 subtitle = "",
                 pointSize = 1.0, 
                 labSize = 4.0,
-                xlim = c(min(S2KO_sig_ordered_result$log2FoldChange), max(S2KO_sig_ordered_result$log2FoldChange)),
+                xlim = c(min(SA2KO_sig_ordered_result$log2FoldChange), max(SA2KO_sig_ordered_result$log2FoldChange)),
                 ylim = c(0, 200)
                 )
 ```
@@ -277,9 +293,9 @@ datatable(TC71_table_result, class = 'cell-border stripe',
 ### all STAG2KO samples Significant Genes Table
 
 ```{r all STAG2KO sample significant DEGs Result Table, message=FALSE, warning=FALSE}
-S2KO_table_result <- dplyr::select(S2KO_sig_ordered_result, Gene_name, log2FoldChange, stat, pvalue, padj)
+SA2KO_table_result <- dplyr::select(SA2KO_sig_ordered_result, Gene_name, log2FoldChange, stat, pvalue, padj)
 
-datatable(S2KO_table_result, class = 'cell-border stripe', 
+datatable(SA2KO_table_result, class = 'cell-border stripe', 
           caption = "Table 4: STAG2KO samples Differentally Significant Genes")
 ```
 
@@ -344,29 +360,29 @@ TC71_heatmap <- pheatmap(TC71_sig_norm_dds_counts,
 ### Top 10 Overexpressed and 10 Underexpressed genes for STAG2KO in A673 cells
 
 ```{r all STAG2KO sample Heatmap Data Setup, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE}
-S2KO_top_over <- dplyr::slice_max(S2KO_sig_ordered_result, n = 10, order_by = stat)
-S2KO_top_under <- dplyr::slice_min(S2KO_sig_ordered_result, n = 10, order_by = stat)
-S2KO_expression_data <- rbind(S2KO_top_over, S2KO_top_under)
+SA2KO_top_over <- dplyr::slice_max(SA2KO_sig_ordered_result, n = 10, order_by = stat)
+SA2KO_top_under <- dplyr::slice_min(SA2KO_sig_ordered_result, n = 10, order_by = stat)
+SA2KO_expression_data <- rbind(SA2KO_top_over, SA2KO_top_under)
 
-S2KO_normalized_dds_counts <- counts(S2KO_dds, normalized=TRUE)
+SA2KO_normalized_dds_counts <- counts(SA2KO_dds, normalized=TRUE)
 
-S2KO_sig_norm_dds_counts <- S2KO_normalized_dds_counts[S2KO_expression_data$Gene_name, ]
+SA2KO_sig_norm_dds_counts <- SA2KO_normalized_dds_counts[SA2KO_expression_data$Gene_name, ]
 
-S2KO_heat_meta <- as.data.frame(colData(S2KO_dds)) %>%
+SA2KO_heat_meta <- as.data.frame(colData(SA2KO_dds)) %>%
   dplyr::select(cell_line, GENOTYPE)
 
 ```
 
 
 
-```{r S2KO Heatmap plot}
-S2KO_heatmap <- pheatmap(S2KO_sig_norm_dds_counts,
-                    main = "Top 10 Over- and Under- expressed A673 STAG2KO DEGs",
+```{r SA2KO Heatmap plot}
+SA2KO_heatmap <- pheatmap(SA2KO_sig_norm_dds_counts,
+                    main = "Top 10 Over- and Under- expressed STAG2KO sample DEGs",
                     color = palette(200), 
                     cluster_rows = FALSE,
                     cluster_cols = FALSE,
                     show_rownames = TRUE, 
-                    annotation = dplyr::select(S2KO_heat_meta, cell_line), 
+                    annotation = dplyr::select(SA2KO_heat_meta, cell_line), 
                     scale = "row") 
 ```
 
@@ -374,7 +390,7 @@ S2KO_heatmap <- pheatmap(S2KO_sig_norm_dds_counts,
 
 ```{r A673 GSEA Set up, cache=TRUE, include=FALSE}
 A673_gsea_gene_list <- A673_sig_ordered_result$stat %>%
-  setNames(object = ,A673_sig_ordered_result$Gene_name) %>%
+  setNames(object = , A673_sig_ordered_result$Gene_name) %>%
   sort(decreasing = TRUE)
 ```
 
@@ -401,7 +417,7 @@ A673_ordered_gse_df <- A673_ordered_gse %>%
   dplyr::select(ONTOLOGY, ID, Description, NES, pvalue, p.adjust, qvalue)
 
 datatable(A673_ordered_gse_df, class = 'cell-border stripe', 
-          caption = "Table 4: GSEA enrichment results for A673 STAG2KO significant DEGs")
+          caption = "Table 5: GSEA enrichment results for A673 STAG2KO significant DEGs")
 ```
 
 ### Top Ranked enrichched pathway for A673 STAG2KO vs Control
@@ -418,7 +434,7 @@ gseaplot2(A673_ordered_gse, geneSetID = 1, title = A673_ordered_gse$Description[
 
 ```{r TC71 GSEA Set up, cache=TRUE, include=FALSE}
 TC71_gsea_gene_list <- TC71_sig_ordered_result$stat %>%
-  setNames(object = ,TC71_sig_ordered_result$Gene_name) %>%
+  setNames(object = , TC71_sig_ordered_result$Gene_name) %>%
   sort(decreasing = TRUE)
 ```
 
@@ -445,7 +461,7 @@ TC71_ordered_gse_df <- TC71_ordered_gse %>%
   dplyr::select(ONTOLOGY, ID, Description, NES, pvalue, p.adjust, qvalue)
 
 datatable(TC71_ordered_gse_df, class = 'cell-border stripe', 
-          caption = "Table 5: GSEA enrichment results for TC71 STAG2KO significant DEGs")
+          caption = "Table 6: GSEA enrichment results for TC71 STAG2KO significant DEGs")
 ```
 
 ### Top Ranked enrichched pathway for TC71 STAG2KO vs Control
@@ -468,14 +484,14 @@ gseaplot2(TC71_ordered_gse, geneSetID = 1, title = TC71_ordered_gse$Description[
 
 ### GSEA Enrichment analysis for all STAG2KO samples
 
-```{r S2KO GSEA Set up, cache=TRUE, include=FALSE}
-S2KO_gsea_gene_list <- S2KO_sig_ordered_result$stat %>%
-  setNames(object = ,S2KO_sig_ordered_result$Gene_name) %>%
+```{r SA2KO GSEA Set up, cache=TRUE, include=FALSE}
+SA2KO_gsea_gene_list <- SA2KO_sig_ordered_result$stat %>%
+  setNames(object = , SA2KO_sig_ordered_result$Gene_name) %>%
   sort(decreasing = TRUE)
 ```
 
-```{r S2KO gse creation, cache=TRUE, include=FALSE}
-S2KO_gse <- gseGO(geneList=S2KO_gsea_gene_list, 
+```{r SA2KO gse creation, cache=TRUE, include=FALSE}
+SA2KO_gse <- gseGO(geneList=SA2KO_gsea_gene_list, 
              ont ="ALL", 
              keyType = "SYMBOL", 
              pvalueCutoff = 0.05, 
@@ -483,27 +499,27 @@ S2KO_gse <- gseGO(geneList=S2KO_gsea_gene_list,
              OrgDb = org.Hs.eg.db, 
              pAdjustMethod = "holm")
 
-S2KO_gse_tibble <- S2KO_gse %>%
+SA2KO_gse_tibble <- SA2KO_gse %>%
   as_tibble()
 ```
 
 
-```{r S2KO GSEA dataframe}
-S2KO_ordered_gse <- S2KO_gse %>%
+```{r SA2KO GSEA dataframe}
+SA2KO_ordered_gse <- SA2KO_gse %>%
   dplyr::arrange(desc(abs(NES)))
 
-S2KO_ordered_gse_df <- S2KO_ordered_gse %>%
+SA2KO_ordered_gse_df <- SA2KO_ordered_gse %>%
   as_tibble() %>%
   dplyr::select(ONTOLOGY, ID, Description, NES, pvalue, p.adjust, qvalue)
 
-datatable(S2KO_ordered_gse_df, class = 'cell-border stripe', 
-          caption = "Table 5: GSEA enrichment results for all STAG2KO samples significant DEGs")
+datatable(SA2KO_ordered_gse_df, class = 'cell-border stripe', 
+          caption = "Table 7: GSEA enrichment results for all STAG2KO samples significant DEGs")
 ```
 
 ### Top Ranked enrichched pathway for all STAG2KO samples 
 
 ```{r}
-gseaplot2(S2KO_ordered_gse, geneSetID = 1, title = S2KO_ordered_gse$Description[1])
+gseaplot2(SA2KO_ordered_gse, geneSetID = 1, title = SA2KO_ordered_gse$Description[1])
 ```
 
 
@@ -584,8 +600,8 @@ cat(unlist(TC71_resRmd), sep = '\n')
 
 ## all STAG2KO samples enrichr Pathway enrichment {.tabset}
 
-```{r S2KO enrichr set up, include=FALSE}
-S2KO_gene_list <- S2KO_sig_ordered_result %>%
+```{r SA2KO enrichr set up, include=FALSE}
+SA2KO_gene_list <- SA2KO_sig_ordered_result %>%
   dplyr::mutate(result = case_when(log2FoldChange > 0 ~ "Over-expressed",
                                    TRUE ~ "Under-expressed")) %>%
   group_by(result) %>%
@@ -593,9 +609,9 @@ S2KO_gene_list <- S2KO_sig_ordered_result %>%
   llply(pull, var = Gene_name)
 ```
 
-```{r S2KO enrichr API set up, results='asis'}
-S2KO_resRmd <- llply(names(S2KO_gene_list), function(groupNow) {
-  genesNow <- S2KO_gene_list[[groupNow]]
+```{r SA2KO enrichr API set up, results='asis'}
+SA2KO_resRmd <- llply(names(SA2KO_gene_list), function(groupNow) {
+  genesNow <- SA2KO_gene_list[[groupNow]]
   response <- httr::POST(  
     url = 'https://maayanlab.cloud/Enrichr/addList', 
     body = list(
@@ -615,5 +631,17 @@ S2KO_resRmd <- llply(names(S2KO_gene_list), function(groupNow) {
   envir = environment(),  
   quiet = TRUE)
 })
-cat(unlist(S2KO_resRmd), sep = '\n')
+cat(unlist(SA2KO_resRmd), sep = '\n')
 ```
+
+
+
+
+
+## Works Cited 
+
+Adane B, Alexe G, Seong BKA, Lu D, Hwang EE, Hnisz D, Lareau CA, Ross L, Lin S, Dela Cruz FS, Richardson M,             Weintraub AS, Wang S, Iniguez AB, Dharia NV, Conway AS, Robichaud AL, Tanenbaum B, Krill-Burger JM, Vazquez F,      Schenone M, Berman JN, Kung AL, Carr SA, Aryee MJ, Young RA, Crompton BD, Stegmaier K. STAG2 loss rewires           oncogenic and developmental programs to promote metastasis in Ewing sarcoma. Cancer Cell. 2021 Jun                  14;39(6):827-844.e10. doi: 10.1016/j.ccell.2021.05.007. PMID: 34129824; PMCID: PMC8378827.
+
+
+
+
