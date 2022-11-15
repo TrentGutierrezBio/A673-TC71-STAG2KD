@@ -1,3 +1,8 @@
+with open("SRR_Acc_List.txt") as input:
+    Datainput = input.read().splitlines()
+rule All:
+    input:
+        expand("salmon.out/{sample}", sample= Datainput)
 rule prefetch:
     output:
         temp("samples/{sample}/{sample}.sra")
@@ -28,8 +33,6 @@ rule salmon_quant:
         R1="fastp/out.{sample}_1.fastq",
         R2="fastp/out.{sample}_2.fastq"    
     output:
-        "salmon.out/{sample}/quant.sf"
-    params:
-        output="salmon.out/{sample}"     
+        "salmon.out/{sample}"
     shell:
-        "salmon quant -l A -1 {input.R1} -2 {input.R2} --validateMapping -i salmon_partial_sa_index/default/ -o {params.output}"
+        "salmon quant -l A -1 {input.R1} -2 {input.R2} --validateMapping -i salmon_partial_sa_index/default/ -o {output}"
