@@ -48,3 +48,7 @@ EnsDb.Hsapiens.v86
 plyr
 limma
 ggnewscale
+futile.logger
+VennDiagram
+msigdbr
+ggVennDiagram

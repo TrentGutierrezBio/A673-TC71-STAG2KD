@@ -1,0 +1,21 @@
+INFO [2022-11-16 17:15:38] [[1]]
+INFO [2022-11-16 17:15:38] list(A673_underexpressed$Gene_name, TC71_underexpressed$Gene_name)
+INFO [2022-11-16 17:15:38] 
+INFO [2022-11-16 17:15:38] $category.names
+INFO [2022-11-16 17:15:38] c("A673", "TC71")
+INFO [2022-11-16 17:15:38] 
+INFO [2022-11-16 17:15:38] $filename
+INFO [2022-11-16 17:15:38] NULL
+INFO [2022-11-16 17:15:38] 
+INFO [2022-11-16 17:15:38] $main
+INFO [2022-11-16 17:15:38] [1] "Overlapping Underexpressed Genes"
+INFO [2022-11-16 17:15:38] 
+INFO [2022-11-16 17:15:38] $fill
+INFO [2022-11-16 17:15:38] c("red", "deepskyblue4")
+INFO [2022-11-16 17:15:38] 
+INFO [2022-11-16 17:15:38] $lwd
+INFO [2022-11-16 17:15:38] [1] 1
+INFO [2022-11-16 17:15:38] 
+INFO [2022-11-16 17:15:38] $lty
+INFO [2022-11-16 17:15:38] [1] 1
+INFO [2022-11-16 17:15:38] 

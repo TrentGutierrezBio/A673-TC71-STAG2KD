@@ -4,7 +4,7 @@
     "mates1": "fastp/out.SRR9326207_1.fastq",
     "mates2": "fastp/out.SRR9326207_2.fastq",
     "validateMappings": [],
-    "index": "salmon_partial_sa_index/default/",
+    "index": "salmon_sa_index/default/",
     "output": "salmon.out/SRR9326207",
     "auxDir": "aux_info"
 }
