@@ -264,7 +264,6 @@ ggplot(A673_counts, aes(x =condition, y = count, color = condition)) +
   ggtitle("Count of STAG2 for A672 SA2KO vs WT")
 ```
 
-
 ```{r STAG2 KO plot Counts for TC71}
 TC71_counts <- plotCounts(TC71_dds, gene = "STAG2", returnData = TRUE)
 
@@ -347,7 +346,7 @@ dge_fourway <- ggplot(data = fourway_df, aes(x = A673_stat, y = TC71_stat, label
 ggplotly(dge_fourway)
 ```
 
-### Top 10 Over-expressed and 10 Under-expressed heatmaps 
+### Top 10 Over-expressed and 10 Under-expressed heatmaps
 
 ```{r A673 Heatmap Data Setup, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE}
 A673_top_over <- dplyr::slice_max(A673_sig_ordered_result, n = 10, order_by = stat)
@@ -423,18 +422,19 @@ TC71_gsea_res <- GSEA(geneList = TC71_gsea_gene_list,
                       TERM2GENE = gene_sets)
 ```
 
-### GSEA Dot Plot 
+### GSEA Dot Plot
 
 ```{r GSEA dot plot, message=FALSE, warning=FALSE}
 dotplot(A673_gsea_res, font.size = 8) +
   ggtitle("A673 GSEA")
 ```
+
 ```{r TC71 GSEA dot plot, message=FALSE, warning=FALSE}
 dotplot(TC71_gsea_res, font.size = 8) +
   ggtitle("TC71 GSEA")
 ```
 
-### GSEA Pathway Plots 
+### GSEA Pathway Plots
 
 ```{r A673 Pathway plots}
 A673_gsea_df <- as.data.frame(A673_gsea_res)
@@ -483,7 +483,7 @@ pathways <- ggVennDiagram(x = list(A673 = A673_gsea_df$ID, TC71 = TC71_gsea_df$I
 pathways
 ```
 
-### GSEA Pathway Datatables 
+### GSEA Pathway Datatables
 
 ```{r GSEA Venn Diagram Tables}
 path_overlap <- intersect(A673_gsea_df$ID, TC71_gsea_df$ID) 
@@ -517,7 +517,7 @@ names(both_pathways) <- gsub("*.x", ".A673", names(both_pathways))
 datatable(both_pathways, caption = "Table 7: Shared Pathways for Both Cell Lines")
 ```
 
-## Enrichr Pathway Analysis 
+## Enrichr Pathway Analysis
 
 ```{r A673 enrichr set up, include=FALSE}
 A673_gene_list <- A673_sig_ordered_result %>%
@@ -611,15 +611,15 @@ cat(unlist(TC71_resRmd), sep = "\n")
 
 **How do we know that the STAG2 KO treatment worked?**
 
-
-**What does comparing the SA2 KO samples from both cell lines tell us?**
-
+The PlotCount graphs for our cell lines show that the WT controls do express higher counts of STAG2, however the intensity of the change is different. The TC71 treatment cells had a far more extreme decrease in STAG2 levels compared to a relatively light change in A673 treatment cells.
 
 **What SA2 KO DEGs are specific to TC71? A673? and which are shared between the two?**
 
+The Over- and Under- expressed venn diagrams give us a broad idea of what genes are specific to their cell line and shared between the two. The 4-way plot gives us a closer look at the genes in the samples, we can see what genes are over- and under - expressed for both cell lines and specific cell lines. The genes on the edge of the graph match up to genes listed on the heatmaps.
 
-**Any Notable results?** 
+**Any Notable results?**
 
+Looking at the GSEA pathway results we do not see many shared enriched pathways with only 8% of the pathways being shared. Looking at the shared pathway table the NES of the cell lines are relatively similar doesn't seem to have any major discrepancies.
 
 ## Works Cited
 
