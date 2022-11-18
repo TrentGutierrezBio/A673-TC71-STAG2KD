@@ -37,7 +37,6 @@ library(conflicted)
 library(stringr)
 library(fgsea)
 library(data.table)
-library(biomaRt)
 library(EnhancedVolcano)
 library(readr)
 library(tximport)
@@ -54,7 +53,6 @@ library(limma)
 library(VennDiagram)
 library(msigdbr)
 library(ggVennDiagram)
-
 ```
 
 ```{r include=FALSE, setup,}
@@ -71,9 +69,7 @@ STAG2 is a important subunit in the cohesin complex that plays an important role
 
 STAG2 and CDKN24 seem to share an exclusive pattern of genetic alterations. cell lines with STAG2 mutations seem likely to express p16 , and reciprocally all cases with CDKN2A deletion seem to express STAG2. (Tirode et al. 2015)
 
-In a study by CellPress, a GSEA enrichment analysis was conducted and from the 18,889 signatures ranked by the average normalized enrichment score (NES), several of the top 20 signatures enriched in STAG2 proficient condition were EWSR1-FLI1-regulated gene signatures. (Surdez et al. 2021)
-
-The expected pathways for Ewing Sarcoma was also reviewed to compare with the gsea and enrichr results. For a study by JBUON, multiple test were conducted first we'll list is the top 10 significantly up-regulated and down-regulated top: UGT3A2, HMCN1, RBM11, DKK2, SNORA23, PTPN13, TNFAIP6, LIPI, DCC, HOXD10 and down: ATP1B1, CLU, MAOB, SORBS1, SORL1, SYNPO2, KIAA1324, GATM, IGKV2D-28, CKMT1B. and for the GO enrichment analysis, for BP ontology pathways relating to transcription, chromatin modfication and remodeling, SRP-dependent cotranslational protein targeting to membrane, viral transcription, rRNA processing, DNA replication. for the CC enriched pathways, nucleus, nuceloplasm, nucleous, centrosome, cytoplasm, nuclear speck, focal adhesion, nuclear membrane, membrane, nuclear chromatin. For MF ontology the pathways are poly(A) RNA binding, DNA binding, chromatin binding, nucleic acid binding, protein binding, nucleotide binding, helicase binding. (Yan et al. 2018)
+In a study published by the Cancer cell journal, a GSEA enrichment analysis was conducted and from the 18,889 signatures ranked by the average normalized enrichment score (NES), several of the top 20 signatures enriched in STAG2 proficient condition were EWSR1-FLI1-regulated gene signatures. (Surdez et al. 2021)
 
 ### Data input
 
@@ -115,16 +111,6 @@ A673_dds_txi <- DESeqDataSetFromTximport(A673_txi, colData = A673_samples, desig
 TC71_dds_txi <- DESeqDataSetFromTximport(TC71_txi, colData = TC71_samples, design = ~condition)
 ```
 
-### Collected Sample Metadata
-
-```{r All Samples}
-data_input_all <- samples %>%
-  dplyr::select(GENOTYPE, cell_line) %>%  
-  kbl(caption = "Table 1: Collected Sample Overview") %>%
-  kable_styling(bootstrap_options = "striped", full_width = T, html_font = "Cambria")
-data_input_all
-```
-
 ## Exploratory Data
 
 ### PCA Plots
@@ -133,13 +119,13 @@ data_input_all
 vst <- vst(A673_dds_txi)
 
 A673_PCA <- plotPCA(vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
-A673_percentVar <- round(100 * attr(A673_PCA, "percentVar"))
+A673_percentvar <- round(100 * attr(A673_PCA, "percentVar"))
 
 ggplot(A673_PCA, aes(PC1, PC2, color = GENOTYPE)) +
   geom_point(size = 3) +
-  ggtitle("PCA Plot for A673 STAG2KO samples") +
-  xlab(paste0("PC1: ", A673_percentVar[1], "% variance")) +
-  ylab(paste0("PC2: ", A673_percentVar[2], "% variance")) +
+  ggtitle("PCA Plot for A673 SA2 KO Samples") +
+  xlab(paste0("PC1: ", A673_percentvar[1], "% variance")) +
+  ylab(paste0("PC2: ", A673_percentvar[2], "% variance")) +
   coord_fixed()
 ```
 
@@ -147,17 +133,17 @@ ggplot(A673_PCA, aes(PC1, PC2, color = GENOTYPE)) +
 TC71_vst <- vst(TC71_dds_txi)
 
 TC71_PCA <- plotPCA(TC71_vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
-TC71_percentVar <- round(100 * attr(TC71_PCA, "percentVar"))
+TC71_percentvar <- round(100 * attr(TC71_PCA, "percentVar"))
 
 ggplot(TC71_PCA, aes(PC1, PC2, color = GENOTYPE)) +
   geom_point(size = 3) +
-  ggtitle("PCA Plot for TC71 STAG2KO samples") +
-  xlab(paste0("PC1: ", TC71_percentVar[1], "% variance")) +
-  ylab(paste0("PC2: ", TC71_percentVar[2], "% variance")) +
+  ggtitle("PCA Plot for TC71 SA2 KO samples") +
+  xlab(paste0("PC1: ", TC71_percentvar[1], "% variance")) +
+  ylab(paste0("PC2: ", TC71_percentvar[2], "% variance")) +
   coord_fixed()
 ```
 
-### Analysis Samples Metadata
+### Sample Metadata
 
 ```{r metadata, echo=TRUE, message=FALSE, warning=FALSE}
 A673_metadata <- colData(A673_dds_txi)
@@ -168,7 +154,7 @@ sample_metadata <- rbind(A673_metadata, TC71_metadata)
 sample_metadata %>%
   as.data.frame() %>%
   dplyr::select(GENOTYPE, cell_line) %>%
-  kbl(caption = "Table 2: Analysis Sample Overview") %>%
+  kbl(caption = htmltools::tags$caption("Table 1: Sample Metadata", style = "color:black")) %>%
   kable_styling(bootstrap_options = "striped", full_width = T, html_font = "Cambria")
 ```
 
@@ -185,7 +171,7 @@ A673_result <- results(A673_dds, contrast = c("condition", "Treatment", "Control
 
 A673_result_df <- as.data.frame(A673_result)
 
-A673_sig_ordered_result <- as.data.frame(A673_result) %>%
+A673_sig_ordered_result <- A673_result_df %>%
   rownames_to_column(var = "Gene_name") %>%
   dplyr::filter(padj < 0.05) %>%
   dplyr::arrange(desc(stat))
@@ -196,7 +182,7 @@ TC71_result <- results(TC71_dds, contrast = c("condition", "Treatment", "Control
 
 TC71_result_df <- as.data.frame(TC71_result)
 
-TC71_sig_ordered_result <- as.data.frame(TC71_result) %>%
+TC71_sig_ordered_result <- TC71_result_df %>%
   rownames_to_column(var = "Gene_name") %>%
   dplyr::filter(padj < 0.05) %>%
   dplyr::arrange(desc(stat))
@@ -211,7 +197,7 @@ EnhancedVolcano(A673_sig_ordered_result,
   lab = A673_sig_ordered_result$Gene_name,
   x = "log2FoldChange",
   y = "pvalue",
-  title = "Siginifcant Genes for STAG2KO in A673 cells",
+  title = "Siginifcant DEGs for A673 SA2 KO Cells",
   subtitle = "",
   pointSize = 1.0,
   labSize = 4.0,
@@ -225,7 +211,7 @@ EnhancedVolcano(TC71_sig_ordered_result,
   lab = TC71_sig_ordered_result$Gene_name,
   x = "log2FoldChange",
   y = "pvalue",
-  title = "Siginifcant Genes for STAG2KO in TC71 Cells",
+  title = "Siginifcant DEGs for TC71 SA2 KO Cells",
   subtitle = "",
   pointSize = 1.0,
   labSize = 4.0,
@@ -237,21 +223,21 @@ EnhancedVolcano(TC71_sig_ordered_result,
 ### Significant DEG tables
 
 ```{r A673 significant DEGs Result Table}
-A673_table_result <- dplyr::select(A673_sig_ordered_result, Gene_name, log2FoldChange, stat, pvalue, padj)
-
-datatable(A673_table_result,
-  class = "cell-border stripe",
-  caption = "Table 3: A672 STAG2KO Differentally Significant Genes", rownames = FALSE
-)
+A673_table_result <- dplyr::select(A673_sig_ordered_result, Gene_name, log2FoldChange, stat, pvalue, padj) %>%
+  datatable(
+    class = "cell-border stripe",
+    caption = htmltools::tags$caption("Table 2: A672 SA2 KO Significant DEGs", style = "color:black"), rownames = FALSE
+  )
+A673_table_result
 ```
 
-```{r all STAG2KO sample significant DEGs Result Table, message=FALSE, warning=FALSE}
-TC71_table_result <- dplyr::select(TC71_sig_ordered_result, Gene_name, log2FoldChange, stat, pvalue, padj)
-
-datatable(TC71_table_result,
-  class = "cell-border stripe",
-  caption = "Table 4: STAG2KO samples Differentally Significant Genes", rownames = FALSE
-)
+```{r TC71 significant DEGs Result Table, message=FALSE, warning=FALSE}
+TC71_table_result <- dplyr::select(TC71_sig_ordered_result, Gene_name, log2FoldChange, stat, pvalue, padj) %>%
+  datatable(
+    class = "cell-border stripe",
+    caption = htmltools::tags$caption("Table 3: TC71 SA2 KO Significant DEGs", style = "color:black"), rownames = FALSE
+  )
+TC71_table_result
 ```
 
 ### STAG2 Plot Counts
@@ -259,17 +245,17 @@ datatable(TC71_table_result,
 ```{r STAG2 KO plot Counts for A673}
 A673_counts <- plotCounts(A673_dds, gene = "STAG2", returnData = TRUE)
 
-ggplot(A673_counts, aes(x =condition, y = count, color = condition)) +
+ggplot(A673_counts, aes(x = condition, y = count, color = condition)) +
   geom_point(size = 2) +
-  ggtitle("Count of STAG2 for A672 SA2KO vs WT")
+  ggtitle("STAG2 Count for A672 SA2 KO vs WT")
 ```
 
 ```{r STAG2 KO plot Counts for TC71}
 TC71_counts <- plotCounts(TC71_dds, gene = "STAG2", returnData = TRUE)
 
-ggplot(TC71_counts, aes(x =condition, y = count, color = condition)) +
+ggplot(TC71_counts, aes(x = condition, y = count, color = condition)) +
   geom_point(size = 2) +
-  ggtitle("Count of STAG2 for TC71 SA2KO vs WT")
+  ggtitle("STAG2 Count for TC71 SA2 KO vs WT")
 ```
 
 ### Venn Diagram
@@ -277,34 +263,36 @@ ggplot(TC71_counts, aes(x =condition, y = count, color = condition)) +
 ```{r Venn Diagram Set Up, message=FALSE, warning=FALSE}
 A673_overexpressed <- A673_sig_ordered_result %>%
   dplyr::filter(log2FoldChange > 0)
-  
+
 A673_underexpressed <- A673_sig_ordered_result %>%
-  dplyr::filter(log2FoldChange < 0) 
-  
+  dplyr::filter(log2FoldChange < 0)
+
 TC71_overexpressed <- TC71_sig_ordered_result %>%
-  dplyr::filter(log2FoldChange > 0) 
-  
+  dplyr::filter(log2FoldChange > 0)
+
 TC71_underexpressed <- TC71_sig_ordered_result %>%
-  dplyr::filter(log2FoldChange < 0) 
-  
+  dplyr::filter(log2FoldChange < 0)
+
 grid.newpage()
 
 over <- venn.diagram(list(A673_overexpressed$Gene_name, TC71_overexpressed$Gene_name),
-                     category.names = c("A673","TC71"),
-                     filename = NULL,
-                     main = "Overlapping Overexpressed Genes",
-                     fill = c("red", "deepskyblue4"), 
-                     lwd = 1, lty = 1)
+  category.names = c("A673", "TC71"),
+  filename = NULL,
+  main = "Overlapping Overexpressed Genes",
+  fill = c("red", "deepskyblue4"),
+  lwd = 1, lty = 1
+)
 grid.draw(over)
 
 grid.newpage()
 
 under <- venn.diagram(list(A673_underexpressed$Gene_name, TC71_underexpressed$Gene_name),
-                     category.names = c("A673","TC71"),
-                     filename = NULL,
-                     main = "Overlapping Underexpressed Genes",
-                     fill = c("red", "deepskyblue4"), 
-                     lwd = 1, lty = 1)
+  category.names = c("A673", "TC71"),
+  filename = NULL,
+  main = "Overlapping Underexpressed Genes",
+  fill = c("red", "deepskyblue4"),
+  lwd = 1, lty = 1
+)
 grid.draw(under)
 ```
 
@@ -323,14 +311,14 @@ TC71_list <- TC71_result_df %>%
   rownames_to_column() %>%
   dplyr::rename("Gene" = rowname, "TC71_Log2FC" = log2FoldChange, "TC71_stat" = stat, "TC71_padj" = padj) %>%
   drop_na()
-  
+
 fourway_df <- inner_join(A673_list, TC71_list, by = "Gene") %>%
   dplyr::mutate(Sig_Group = case_when(
-    A673_padj < 0.05 & TC71_padj < 0.05 ~ "Both", 
+    A673_padj < 0.05 & TC71_padj < 0.05 ~ "Both",
     A673_padj < 0.05 ~ "A673-only", TC71_padj < 0.05 ~ "TC71-only",
     TRUE ~ "Not Significant"
   ))
-  
+
 dge_fourway <- ggplot(data = fourway_df, aes(x = A673_stat, y = TC71_stat, label = Gene, color = Sig_Group)) +
   geom_point(alpha = .8) +
   geom_hline(yintercept = 0, size = .1) +
@@ -340,13 +328,14 @@ dge_fourway <- ggplot(data = fourway_df, aes(x = A673_stat, y = TC71_stat, label
     "Both" = "blue",
     "A673-only" = "darkgoldenrod2",
     "TC71-only" = "firebrick",
-    "Not Significant" = "grey")) +
+    "Not Significant" = "grey"
+  )) +
   labs(title = "Wald stat of Differentialy Expressed Genes in A673 and TC71 Cell lines")
 
 ggplotly(dge_fourway)
 ```
 
-### Top 10 Over-expressed and 10 Under-expressed heatmaps
+### Top 10 Over-expressed and 10 Under-expressed Heatmaps
 
 ```{r A673 Heatmap Data Setup, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE}
 A673_top_over <- dplyr::slice_max(A673_sig_ordered_result, n = 10, order_by = stat)
@@ -415,106 +404,181 @@ TC71_gsea_gene_list <- TC71_sig_ordered_result$stat %>%
   setNames(object = , TC71_sig_ordered_result$Gene_name) %>%
   sort(decreasing = TRUE)
 
-A673_gsea_res <- GSEA(geneList = A673_gsea_gene_list, 
-                      TERM2GENE = gene_sets)
+A673_gsea_res <- GSEA(
+  geneList = A673_gsea_gene_list,
+  TERM2GENE = gene_sets
+)
 
-TC71_gsea_res <- GSEA(geneList = TC71_gsea_gene_list, 
-                      TERM2GENE = gene_sets)
-```
+TC71_gsea_res <- GSEA(
+  geneList = TC71_gsea_gene_list,
+  TERM2GENE = gene_sets
+)
 
-### GSEA Dot Plot
-
-```{r GSEA dot plot, message=FALSE, warning=FALSE}
-dotplot(A673_gsea_res, font.size = 8) +
-  ggtitle("A673 GSEA")
-```
-
-```{r TC71 GSEA dot plot, message=FALSE, warning=FALSE}
-dotplot(TC71_gsea_res, font.size = 8) +
-  ggtitle("TC71 GSEA")
-```
-
-### GSEA Pathway Plots
-
-```{r A673 Pathway plots}
 A673_gsea_df <- as.data.frame(A673_gsea_res)
 
 A673_top_pathways <- A673_gsea_df %>%
   top_n(n = 4, wt = NES) %>%
   pull(ID)
-A673_top_pathways_plot <- gseaplot2(A673_gsea_res, geneSetID = A673_top_pathways, title = "Top 4 top A673 Pathways") 
-
-A673_top_pathways_plot
 
 A673_bot_pathways <- A673_gsea_df %>%
   top_n(n = 4, wt = -NES) %>%
   pull(ID)
-A673_bot_pathways_plot <- gseaplot2(A673_gsea_res, geneSetID = A673_bot_pathways, title = "Top 4 bottom A673 Pathways") 
 
-A673_bot_pathways_plot
-```
-
-```{r TC71 Pathway plots}
 TC71_gsea_df <- as.data.frame(TC71_gsea_res)
 
 TC71_top_pathways <- TC71_gsea_df %>%
   top_n(n = 4, wt = NES) %>%
   pull(ID)
-TC71_top_pathways_plot <- gseaplot2(TC71_gsea_res, geneSetID = TC71_top_pathways, title = "Top 4 top TC71 Pathways") 
-
-TC71_top_pathways_plot
 
 TC71_bot_pathways <- TC71_gsea_df %>%
   top_n(n = 4, wt = -NES) %>%
   pull(ID)
-TC71_bot_pathways_plot <- gseaplot2(TC71_gsea_res, geneSetID = TC71_bot_pathways, title = "Top 4 bottom TC71 Pathways") 
+```
 
-TC71_bot_pathways_plot
+### GSEA Pathway Plots
+
+```{r A673 Enrichment plots}
+A673_top_ES_plot <- gseaplot2(A673_gsea_res, geneSetID = A673_top_pathways, title = "Top 4 Overexpressed A673 Enrichment plots")
+
+A673_top_ES_plot
+
+A673_bot_ES_plot <- gseaplot2(A673_gsea_res, geneSetID = A673_bot_pathways, title = "Top 4 Underexpressed A673 Enrichment plots")
+
+A673_bot_ES_plot
+```
+
+```{r TC71 Enrichment plots}
+TC71_top_ES_plot <- gseaplot2(TC71_gsea_res, geneSetID = TC71_top_pathways, title = "Top 4 Overexpressed TC71 Enrichment Plot")
+
+TC71_top_ES_plot
+
+TC71_bot_ES_plot <- gseaplot2(TC71_gsea_res, geneSetID = TC71_bot_pathways, title = "Top 4 Underexpressed TC71 Enrichment Plot")
+
+TC71_bot_ES_plot
 ```
 
 ### GSEA Venn Diagram
 
 ```{r GSEA Venn Diagram}
-pathways <- ggVennDiagram(x = list(A673 = A673_gsea_df$ID, TC71 = TC71_gsea_df$ID)) +
-  ggtitle("Overlapping Pathways between Cell Lines") +
+A673_overexp_gsea <- A673_gsea_df %>%
+  dplyr::filter(NES > 0) %>%
+  pull(ID)
+
+A673_underexp_gsea <- A673_gsea_df %>%
+  dplyr::filter(NES < 0) %>%
+  pull(ID)
+
+TC71_overexp_gsea <- TC71_gsea_df %>%
+  dplyr::filter(NES > 0) %>%
+  pull(ID)
+
+TC71_underexp_gsea <- TC71_gsea_df %>%
+  dplyr::filter(NES < 0) %>%
+  pull(ID)
+
+overexp_gene_set <- ggVennDiagram(x = list(A673 = A673_overexp_gsea, TC71 = TC71_overexp_gsea)) +
+  ggtitle("Overlapping Overexpressed Gene Sets") +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_color_brewer(palette = "Blues") +
   scale_fill_gradient(low = "#ece7f2", high = "#2b8cbe")
-pathways
+
+overexp_gene_set
+
+underexp_gene_set <- ggVennDiagram(x = list(A673 = A673_underexp_gsea, TC71 = TC71_underexp_gsea)) +
+  ggtitle("Overlapping Underexpressed Gene Sets") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_brewer(palette = "Blues") +
+  scale_fill_gradient(low = "#ece7f2", high = "#2b8cbe")
+
+underexp_gene_set
 ```
 
-### GSEA Pathway Datatables
+### GSEA Pathway Datatables {.tabset}
 
-```{r GSEA Venn Diagram Tables}
-path_overlap <- intersect(A673_gsea_df$ID, TC71_gsea_df$ID) 
+```{r A673 GSEA Venn Diagram Tables}
+overexp_gene_overlap <- intersect(A673_overexp_gsea, TC71_overexp_gsea)
+
+A673_overexp_gsea_df <- A673_gsea_df %>%
+  dplyr::filter(NES > 0)
+
+TC71_overexp_gsea_df <- TC71_gsea_df %>%
+  dplyr::filter(NES > 0)
+
 "%!in%" <- Negate("%in%")
 
-cell_gsea_list <- list('A673' = A673_gsea_df, "TC71" = TC71_gsea_df)
+cell_overexp_gsea_list <- list("A673" = A673_overexp_gsea_df, "TC71" = TC71_overexp_gsea_df)
 
-pathway_data <- lapply(cell_gsea_list, function(x){ (x[x$ID %!in% path_overlap,] %>%
-                                                       rownames_to_column("Pathway") %>%
-                                                       dplyr::arrange(rank) %>%
-                                                       dplyr::select(c(-ID, -Description, -setSize,
-                                                                       -enrichmentScore, -qvalue, -leading_edge,
-                                                                       -core_enrichment)) %>%
-                                                       dplyr::arrange(desc(NES)))
-  })
+overexp_genes_data <- lapply(cell_overexp_gsea_list, function(x) {
+  (x[x$ID %!in% overexp_gene_overlap, ] %>%
+    rownames_to_column("gene_set") %>%
+    dplyr::arrange(rank) %>%
+    dplyr::select(c(
+      -ID, -Description, -setSize,
+      -enrichmentScore, -qvalue, -leading_edge,
+      -core_enrichment
+    )) %>%
+    dplyr::arrange(desc(NES)))
+})
 
-pathway_data$A673 %>%
-  datatable(caption = "Table 5: A673 GSEA Pathways")
+overexp_genes_data$A673 %>%
+  datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 4: A673 GSEA Overexpressed Gene Sets", style = "color:black"), rownames = FALSE)
 
-pathway_data$TC71 %>%
-  datatable(caption = "Table 6: TC71 GSEA Pathways")
-  
-both_pathways <- inner_join(A673_gsea_df, TC71_gsea_df, by = "ID") %>%
+overexp_genes_data$TC71 %>%
+  datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 5: TC71 GSEA Underexpressed Gene Sets", style = "color:black"), rownames = FALSE)
+
+shared_overexp_genes <- inner_join(A673_overexp_gsea_df, TC71_overexp_gsea_df, by = "ID") %>%
   dplyr::mutate(meanrank = rowMeans(cbind(rank.x, rank.y))) %>%
   dplyr::arrange(meanrank) %>%
-  dplyr::select(starts_with(c("ID", "NES", "p.adjust")))
+  dplyr::select(starts_with(c("ID", "NES", "p.adjust"))) %>%
+  dplyr::rename("gene_sets" = "ID")
 
-names(both_pathways) <- gsub("*.y", ".TC71", names(both_pathways))
-names(both_pathways) <- gsub("*.x", ".A673", names(both_pathways))
+names(shared_overexp_genes) <- gsub("*.y", ".TC71", names(shared_overexp_genes))
+names(shared_overexp_genes) <- gsub("*.x", ".A673", names(shared_overexp_genes))
 
-datatable(both_pathways, caption = "Table 7: Shared Pathways for Both Cell Lines")
+datatable(shared_overexp_genes, class = "cell-border stripe", caption = htmltools::tags$caption("Table 6: Shared Overexpressed Genesets for Both Cell Lines", style = "color:black"), rownames = FALSE)
+```
+
+```{r TC71 GSEA Venn Diagram Tables}
+underexp_path_overlap <- intersect(A673_underexp_gsea, TC71_underexp_gsea)
+
+A673_underexp_gsea_df <- A673_gsea_df %>%
+  dplyr::filter(NES < 0)
+
+TC71_underexp_gsea_df <- TC71_gsea_df %>%
+  dplyr::filter(NES < 0)
+
+"%!in%" <- Negate("%in%")
+
+cell_underexp_gsea_list <- list("A673" = A673_underexp_gsea_df, "TC71" = TC71_underexp_gsea_df)
+
+underexp_genes_data <- lapply(cell_underexp_gsea_list, function(x) {
+  (x[x$ID %!in% underexp_path_overlap, ] %>%
+    rownames_to_column("gene_set") %>%
+    dplyr::arrange(rank) %>%
+    dplyr::select(c(
+      -ID, -Description, -setSize,
+      -enrichmentScore, -qvalue, -leading_edge,
+      -core_enrichment
+    )) %>%
+    dplyr::arrange(desc(NES)))
+})
+
+underexp_genes_data$A673 %>%
+  datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 7: A673 GSEA Underexpressed Genesets", style = "color:black"), rownames = FALSE)
+
+underexp_genes_data$TC71 %>%
+  datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 8: TC71 GSEA Overexpressed Genesets", style = "color:black"), rownames = FALSE)
+
+shared_underexp_genes <- inner_join(A673_underexp_gsea_df, TC71_underexp_gsea_df, by = "ID") %>%
+  dplyr::mutate(meanrank = rowMeans(cbind(rank.x, rank.y))) %>%
+  dplyr::arrange(meanrank) %>%
+  dplyr::select(starts_with(c("ID", "NES", "p.adjust"))) %>%
+  dplyr::rename("gene_sets" = "ID")
+
+names(shared_underexp_genes) <- gsub("*.y", ".TC71", names(shared_underexp_genes))
+names(shared_underexp_genes) <- gsub("*.x", ".A673", names(shared_underexp_genes))
+
+datatable(shared_underexp_genes, class = "cell-border stripe", caption = htmltools::tags$caption("Table 9: Shared Underexpressed Genesets for Both Cell Lines", style = "color:black"), rownames = FALSE)
 ```
 
 ## Enrichr Pathway Analysis
@@ -615,20 +679,15 @@ The PlotCount graphs for our cell lines show that the WT controls do express hig
 
 **What SA2 KO DEGs are specific to TC71? A673? and which are shared between the two?**
 
-The Over- and Under- expressed venn diagrams give us a broad idea of what genes are specific to their cell line and shared between the two. The 4-way plot gives us a closer look at the genes in the samples, we can see what genes are over- and under - expressed for both cell lines and specific cell lines. The genes on the edge of the graph match up to genes listed on the heatmaps.
+The Over- and Under- expressed genes Venn diagrams give us a broad idea of what genes are specific to their cell line and shared between the two. The 4-way plot gives us a closer look at the genes in the samples, we can see what genes are over- and under - expressed for both cell lines and specific cell lines. The genes on the edge of the graph match up to genes listed on the heatmaps.
 
 **Any Notable results?**
-
-Looking at the GSEA pathway results we do not see many shared enriched pathways with only 8% of the pathways being shared. Looking at the shared pathway table the NES of the cell lines are relatively similar doesn't seem to have any major discrepancies.
+The most notable results I'm curious are from the GSEA results, The two cell lines A673 and TC71 had the same treatment applied to them and both cell lines seem to be relatively similar to each other both are classified as Ewing Sarcoma cell lines, but the GSEA over- & under- Enrichment Venn Diagrams show that they have very little overlapping enriched gene sets (~7-10%) where the A673 showed the most amount of enrichment for both over- & under- compared to TC71. 
 
 ## Works Cited
 
 Adane B, Alexe G, Seong BKA, Lu D, Hwang EE, Hnisz D, Lareau CA, Ross L, Lin S, Dela Cruz FS, Richardson , Weintraub AS, Wang S, Iniguez AB, Dharia NV, Conway AS, Robichaud AL, Tanenbaum B, Krill-Burger JM, Vazquez F, Schenone M, Berman JN, Kung AL, Carr SA, Aryee MJ, Young RA, Crompton BD, Stegmaier K. STAG2 loss rewires oncogenic and developmental programs to promote metastasis in Ewing sarcoma. Cancer Cell. 2021 Jun 14;39(6):827-844.e10. doi: 10.1016/j.ccell.2021.05.007. PMID: 34129824; PMCID: PMC8378827.
 
-Li G, Zhang P, Zhang W, Lei Z, He J, Meng J, Di T, Yan W. Identification of key genes and pathways in Ewing's sarcoma patients associated with metastasis and poor prognosis. Onco Targets Ther. 2019 May 27;12:4153-4165. doi: 10.2147/OTT.S195675. PMID: 31213834; PMCID: PMC6549663.
-
 Surdez D, Zaidi S, Grossetête S, Laud-Duval K, Ferre AS, Mous L, Vourc'h T, Tirode F, Pierron G, Raynal V, Baulande S, Brunet E, Hill V, Delattre O. STAG2 mutations alter CTCF-anchored loop extrusion, reduce cis-regulatory interactions and EWSR1-FLI1 activity in Ewing sarcoma. Cancer Cell. 2021 Jun 14;39(6):810-826.e9. doi: 10.1016/j.ccell.2021.04.001. Epub 2021 Apr 29. PMID: 33930311.
 
 Tirode F, Surdez D, Ma X, Parker M, Le Deley MC, Bahrami A, Zhang Z, Lapouble E, Grossetête-Lalami S, Rusch M, Reynaud S, Rio-Frio T, Hedlund E, Wu G, Chen X, Pierron G, Oberlin O, Zaidi S, Lemmon G, Gupta P, Vadodaria B, Easton J, Gut M, Ding L, Mardis ER, Wilson RK, Shurtleff S, Laurence V, Michon J, Marec-Bérard P, Gut I, Downing J, Dyer M, Zhang J, Delattre O; St. Jude Children's Research Hospital--Washington University Pediatric Cancer Genome Project and the International Cancer Genome Consortium. Genomic landscape of Ewing sarcoma defines an aggressive subtype with co-association of STAG2 and TP53 mutations. Cancer Discov. 2014 Nov;4(11):1342-53. doi: 10.1158/2159-8290.CD-14-0622. Epub 2014 Sep 15. PMID: 25223734; PMCID: PMC4264969.
-
-Yan C, Wang Y, Wang Q, Feng X, Wang L, Bu Z, Lu B, Jiang J. Identification of key genes and pathways in Ewing's sarcoma using bioinformatics analysis. J BUON. 2018 Sep-Oct;23(5):1472-1480. PMID: 30570875.
