@@ -4,3 +4,6 @@
 .Ruserdata
 Salmon/.snakemake
 Salmon/salmon_partial_sa_index
+VennDiagram*
+*_analysis_cache
+*_analysis_files

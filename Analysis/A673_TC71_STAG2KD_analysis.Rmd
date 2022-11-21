@@ -82,7 +82,7 @@ All samples are downloaded from the SRA Run Selector BioProject PRJNA549593, sli
 ```{r Tximport set up, message=FALSE, warning=FALSE, cache=FALSE}
 samples <- read.table(file.path("Analysis/SraRunTable.txt"), sep = ",", header = TRUE) %>%
   dplyr::mutate(cell_line = ifelse(grepl("A673", x = source_name), "A673", "TC71")) %>%
-  dplyr::mutate(condition = ifelse(grepl("WT|siCT", x = GENOTYPE), "Control", "Treatment"))
+  dplyr::mutate(condition = ifelse(grepl("WT|siCT", x = GENOTYPE), "Control", "GeneKO"))
 
 A673_samples <- samples %>%
   dplyr::filter(GENOTYPE %in% c("WT", "SA2 KO") & cell_line == "A673")
@@ -111,37 +111,7 @@ A673_dds_txi <- DESeqDataSetFromTximport(A673_txi, colData = A673_samples, desig
 TC71_dds_txi <- DESeqDataSetFromTximport(TC71_txi, colData = TC71_samples, design = ~condition)
 ```
 
-## Exploratory Data
-
-### PCA Plots
-
-```{r A673 PCA Plot, message=FALSE, warning=FALSE}
-vst <- vst(A673_dds_txi)
-
-A673_PCA <- plotPCA(vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
-A673_percentvar <- round(100 * attr(A673_PCA, "percentVar"))
-
-ggplot(A673_PCA, aes(PC1, PC2, color = GENOTYPE)) +
-  geom_point(size = 3) +
-  ggtitle("PCA Plot for A673 SA2 KO Samples") +
-  xlab(paste0("PC1: ", A673_percentvar[1], "% variance")) +
-  ylab(paste0("PC2: ", A673_percentvar[2], "% variance")) +
-  coord_fixed()
-```
-
-```{r TC71 PCA plot, message=FALSE, warning=FALSE}
-TC71_vst <- vst(TC71_dds_txi)
-
-TC71_PCA <- plotPCA(TC71_vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
-TC71_percentvar <- round(100 * attr(TC71_PCA, "percentVar"))
-
-ggplot(TC71_PCA, aes(PC1, PC2, color = GENOTYPE)) +
-  geom_point(size = 3) +
-  ggtitle("PCA Plot for TC71 SA2 KO samples") +
-  xlab(paste0("PC1: ", TC71_percentvar[1], "% variance")) +
-  ylab(paste0("PC2: ", TC71_percentvar[2], "% variance")) +
-  coord_fixed()
-```
+## Exploratory Data Analysis
 
 ### Sample Metadata
 
@@ -158,6 +128,38 @@ sample_metadata %>%
   kable_styling(bootstrap_options = "striped", full_width = T, html_font = "Cambria")
 ```
 
+### PCA Plots
+
+```{r A673 PCA Plot, message=FALSE, warning=FALSE}
+vst <- vst(A673_dds_txi)
+
+A673_PCA <- plotPCA(vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
+A673_percentvar <- round(100 * attr(A673_PCA, "percentVar"))
+
+ggplot(A673_PCA, aes(PC1, PC2, color = GENOTYPE)) +
+  geom_point(size = 3) +
+  ggtitle("PCA Plot for A673 Samples") +
+  xlab(paste0("PC1: ", A673_percentvar[1], "% variance")) +
+  ylab(paste0("PC2: ", A673_percentvar[2], "% variance")) +
+  coord_fixed()
+```
+
+```{r TC71 PCA plot, message=FALSE, warning=FALSE}
+TC71_vst <- vst(TC71_dds_txi)
+
+TC71_PCA <- plotPCA(TC71_vst, intgroup = c("cell_line", "GENOTYPE"), returnData = TRUE)
+TC71_percentvar <- round(100 * attr(TC71_PCA, "percentVar"))
+
+ggplot(TC71_PCA, aes(PC1, PC2, color = GENOTYPE)) +
+  geom_point(size = 3) +
+  ggtitle("PCA Plot for TC71 Samples") +
+  xlab(paste0("PC1: ", TC71_percentvar[1], "% variance")) +
+  ylab(paste0("PC2: ", TC71_percentvar[2], "% variance")) +
+  coord_fixed()
+```
+
+
+
 ```{r DESeq2, message=FALSE, warning=FALSE, cache=FALSE, include=FALSE}
 A673_dds <- DESeq(A673_dds_txi)
 
@@ -167,23 +169,23 @@ TC71_dds <- DESeq(TC71_dds_txi)
 # Results
 
 ```{r A673 result extraction, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE}
-A673_result <- results(A673_dds, contrast = c("condition", "Treatment", "Control"))
+A673_result <- results(A673_dds, contrast = c("condition", "GeneKO", "Control"))
 
-A673_result_df <- as.data.frame(A673_result)
+A673_result_df <- as.data.frame(A673_result) %>%
+  rownames_to_column(var = "Gene_name")
 
 A673_sig_ordered_result <- A673_result_df %>%
-  rownames_to_column(var = "Gene_name") %>%
   dplyr::filter(padj < 0.05) %>%
   dplyr::arrange(desc(stat))
 ```
 
 ```{r TC71 result extraction, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE}
-TC71_result <- results(TC71_dds, contrast = c("condition", "Treatment", "Control"))
+TC71_result <- results(TC71_dds, contrast = c("condition", "GeneKO", "Control"))
 
-TC71_result_df <- as.data.frame(TC71_result)
+TC71_result_df <- as.data.frame(TC71_result) %>%
+  rownames_to_column(var = "Gene_name")
 
 TC71_sig_ordered_result <- TC71_result_df %>%
-  rownames_to_column(var = "Gene_name") %>%
   dplyr::filter(padj < 0.05) %>%
   dplyr::arrange(desc(stat))
 ```
@@ -193,11 +195,11 @@ TC71_sig_ordered_result <- TC71_result_df %>%
 ### Volcano Plots
 
 ```{r A673 EnhancedVolcano plot, warning=FALSE, fig.dim = c(10,8)}
-EnhancedVolcano(A673_sig_ordered_result,
-  lab = A673_sig_ordered_result$Gene_name,
+EnhancedVolcano(A673_result_df,
+  lab = A673_result_df$Gene_name,
   x = "log2FoldChange",
   y = "pvalue",
-  title = "Siginifcant DEGs for A673 SA2 KO Cells",
+  title = "Volcano Plot for A673 SA2 KO Cells",
   subtitle = "",
   pointSize = 1.0,
   labSize = 4.0,
@@ -207,16 +209,16 @@ EnhancedVolcano(A673_sig_ordered_result,
 ```
 
 ```{r TC71 EnhancedVolcano plot, warning=FALSE, fig.dim = c(10,8)}
-EnhancedVolcano(TC71_sig_ordered_result,
-  lab = TC71_sig_ordered_result$Gene_name,
+EnhancedVolcano(TC71_result_df,
+  lab = TC71_result_df$Gene_name,
   x = "log2FoldChange",
   y = "pvalue",
-  title = "Siginifcant DEGs for TC71 SA2 KO Cells",
+  title = "Volcano Plot for TC71 SA2 KO Cells",
   subtitle = "",
   pointSize = 1.0,
   labSize = 4.0,
   xlim = c(min(TC71_sig_ordered_result$log2FoldChange), max(TC71_sig_ordered_result$log2FoldChange)),
-  ylim = c(0, 200)
+  ylim = c(0, 250)
 )
 ```
 
@@ -247,7 +249,9 @@ A673_counts <- plotCounts(A673_dds, gene = "STAG2", returnData = TRUE)
 
 ggplot(A673_counts, aes(x = condition, y = count, color = condition)) +
   geom_point(size = 2) +
-  ggtitle("STAG2 Count for A672 SA2 KO vs WT")
+  ggtitle("STAG2 Count for A672 SA2 KO vs WT") +
+  ylab(label = "STAG2 Expression ()") 
+
 ```
 
 ```{r STAG2 KO plot Counts for TC71}
@@ -255,7 +259,8 @@ TC71_counts <- plotCounts(TC71_dds, gene = "STAG2", returnData = TRUE)
 
 ggplot(TC71_counts, aes(x = condition, y = count, color = condition)) +
   geom_point(size = 2) +
-  ggtitle("STAG2 Count for TC71 SA2 KO vs WT")
+  ggtitle("STAG2 Count for TC71 SA2 KO vs WT") + 
+  ylab(label = "STAG2 Expression (reads)") 
 ```
 
 ### Venn Diagram
@@ -357,8 +362,8 @@ palette <- colorRampPalette(cols_RdBu)
 A673_heatmap <- pheatmap(A673_sig_norm_dds_counts,
   main = "Top 10 Over- and Under- expressed A673 STAG2KO DEGs",
   color = palette(200),
-  cluster_rows = FALSE,
-  cluster_cols = FALSE,
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
   show_rownames = TRUE,
   annotation = dplyr::select(A673_heat_meta, condition),
   scale = "row"
@@ -382,8 +387,8 @@ TC71_heat_meta <- as.data.frame(colData(TC71_dds)) %>%
 TC71_heatmap <- pheatmap(TC71_sig_norm_dds_counts,
   main = "Top 10 Over- and Under- expressed TC71 STAG2KO DEGs",
   color = palette(200),
-  cluster_rows = FALSE,
-  cluster_cols = FALSE,
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
   show_rownames = TRUE,
   annotation = dplyr::select(TC71_heat_meta, condition),
   scale = "row"
@@ -396,12 +401,12 @@ TC71_heatmap <- pheatmap(TC71_sig_norm_dds_counts,
 gene_sets <- msigdbr(species = "Homo sapiens", category = "C5") %>%
   dplyr::select(gs_name, gene_symbol)
 
-A673_gsea_gene_list <- A673_sig_ordered_result$stat %>%
-  setNames(object = , A673_sig_ordered_result$Gene_name) %>%
+A673_gsea_gene_list <- A673_result_df$stat %>%
+  setNames(object = , A673_result_df$Gene_name) %>%
   sort(decreasing = TRUE)
 
-TC71_gsea_gene_list <- TC71_sig_ordered_result$stat %>%
-  setNames(object = , TC71_sig_ordered_result$Gene_name) %>%
+TC71_gsea_gene_list <- TC71_result_df$stat %>%
+  setNames(object = , TC71_result_df$Gene_name) %>%
   sort(decreasing = TRUE)
 
 A673_gsea_res <- GSEA(
@@ -461,36 +466,56 @@ TC71_bot_ES_plot
 
 ```{r GSEA Venn Diagram}
 A673_overexp_gsea <- A673_gsea_df %>%
-  dplyr::filter(NES > 0) %>%
+  dplyr::filter(NES > 0) 
+
+A673_overexp_gsea_id <- A673_overexp_gsea %>%
   pull(ID)
 
 A673_underexp_gsea <- A673_gsea_df %>%
-  dplyr::filter(NES < 0) %>%
-  pull(ID)
+  dplyr::filter(NES < 0)
+
+A673_underexp_gsea_id <- A673_underexp_gsea %>%
+    pull(ID)
 
 TC71_overexp_gsea <- TC71_gsea_df %>%
-  dplyr::filter(NES > 0) %>%
+  dplyr::filter(NES > 0) 
+
+TC71_overexp_gsea_id <- TC71_overexp_gsea %>%
   pull(ID)
 
 TC71_underexp_gsea <- TC71_gsea_df %>%
-  dplyr::filter(NES < 0) %>%
+  dplyr::filter(NES < 0)
+
+TC71_underexp_gsea_id <- TC71_underexp_gsea %>%
   pull(ID)
 
-overexp_gene_set <- ggVennDiagram(x = list(A673 = A673_overexp_gsea, TC71 = TC71_overexp_gsea)) +
-  ggtitle("Overlapping Overexpressed Gene Sets") +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  scale_color_brewer(palette = "Blues") +
-  scale_fill_gradient(low = "#ece7f2", high = "#2b8cbe")
+grid.newpage()
+
+overexp_gene_set <- venn.diagram(list(A673_overexp_gsea$ID, TC71_overexp_gsea$ID),
+  category.names = c("A673", "TC71"),
+  filename = NULL,
+  main = "Overlapping Overexpressed Gene Sets",
+  fill = c("red", "deepskyblue4"), 
+  lwd = 1, lty =1)
+
+
 
 overexp_gene_set
 
-underexp_gene_set <- ggVennDiagram(x = list(A673 = A673_underexp_gsea, TC71 = TC71_underexp_gsea)) +
-  ggtitle("Overlapping Underexpressed Gene Sets") +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  scale_color_brewer(palette = "Blues") +
-  scale_fill_gradient(low = "#ece7f2", high = "#2b8cbe")
+grid.draw(overexp_gene_set)
+
+grid.newpage()
+
+underexp_gene_set <- venn.diagram(list(A673_underexp_gsea$ID, TC71_underexp_gsea$ID),
+  category.names = c("A673", "TC71"),
+  filename = NULL,
+  main = "Overlapping Underexpressed Gene Sets",
+  fill = c("red", "deepskyblue4"), 
+  lwd = 1, lty =1)
 
 underexp_gene_set
+
+grid.draw(underexp_gene_set)
 ```
 
 ### GSEA Pathway Datatables {.tabset}
@@ -524,7 +549,7 @@ overexp_genes_data$A673 %>%
   datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 4: A673 GSEA Overexpressed Gene Sets", style = "color:black"), rownames = FALSE)
 
 overexp_genes_data$TC71 %>%
-  datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 5: TC71 GSEA Underexpressed Gene Sets", style = "color:black"), rownames = FALSE)
+  datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 5: TC71 GSEA Overexpressed Gene Sets", style = "color:black"), rownames = FALSE)
 
 shared_overexp_genes <- inner_join(A673_overexp_gsea_df, TC71_overexp_gsea_df, by = "ID") %>%
   dplyr::mutate(meanrank = rowMeans(cbind(rank.x, rank.y))) %>%
@@ -567,7 +592,7 @@ underexp_genes_data$A673 %>%
   datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 7: A673 GSEA Underexpressed Genesets", style = "color:black"), rownames = FALSE)
 
 underexp_genes_data$TC71 %>%
-  datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 8: TC71 GSEA Overexpressed Genesets", style = "color:black"), rownames = FALSE)
+  datatable(class = "cell-border stripe", caption = htmltools::tags$caption("Table 8: TC71 GSEA Underexpressed Genesets", style = "color:black"), rownames = FALSE)
 
 shared_underexp_genes <- inner_join(A673_underexp_gsea_df, TC71_underexp_gsea_df, by = "ID") %>%
   dplyr::mutate(meanrank = rowMeans(cbind(rank.x, rank.y))) %>%
