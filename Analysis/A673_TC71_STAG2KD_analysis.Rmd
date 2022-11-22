@@ -73,7 +73,7 @@ In a study published by the Cancer cell journal, a GSEA enrichment analysis was 
 
 ### Data input
 
-All samples are downloaded from the SRA Run Selector BioProject PRJNA549593, slight quality control via fastp was conducted and then the reads were aligned using Salmon for Transcript-level quantification files. The metadata for the samples was provided from the SRA Run Selector also. 3 sample comparisons were constructed using the sample data:
+All samples are downloaded from the SRA Run Selector for [GSE1322966](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE132966), slight quality control via fastp was conducted and then the reads were aligned using Salmon for Transcript-level quantification files. The metadata for the samples was provided from the SRA Run Selector also. 3 sample comparisons were constructed using the sample data:
 
 1.  SA2 KO vs WT in A673 cells.
 
@@ -157,8 +157,6 @@ ggplot(TC71_PCA, aes(PC1, PC2, color = GENOTYPE)) +
   ylab(paste0("PC2: ", TC71_percentvar[2], "% variance")) +
   coord_fixed()
 ```
-
-
 
 ```{r DESeq2, message=FALSE, warning=FALSE, cache=FALSE, include=FALSE}
 A673_dds <- DESeq(A673_dds_txi)
@@ -250,7 +248,7 @@ A673_counts <- plotCounts(A673_dds, gene = "STAG2", returnData = TRUE)
 ggplot(A673_counts, aes(x = condition, y = count, color = condition)) +
   geom_point(size = 2) +
   ggtitle("STAG2 Count for A672 SA2 KO vs WT") +
-  ylab(label = "STAG2 Expression ()") 
+  ylab(label = "STAG2 Expression (reads)") 
 
 ```
 
@@ -411,13 +409,11 @@ TC71_gsea_gene_list <- TC71_result_df$stat %>%
 
 A673_gsea_res <- GSEA(
   geneList = A673_gsea_gene_list,
-  TERM2GENE = gene_sets
-)
+  TERM2GENE = gene_sets)
 
 TC71_gsea_res <- GSEA(
   geneList = TC71_gsea_gene_list,
-  TERM2GENE = gene_sets
-)
+  TERM2GENE = gene_sets)
 
 A673_gsea_df <- as.data.frame(A673_gsea_res)
 
@@ -464,7 +460,7 @@ TC71_bot_ES_plot
 
 ### GSEA Venn Diagram
 
-```{r GSEA Venn Diagram}
+```{r GSEA Venn Diagram, message=FALSE, warning=FALSE}
 A673_overexp_gsea <- A673_gsea_df %>%
   dplyr::filter(NES > 0) 
 
@@ -498,10 +494,6 @@ overexp_gene_set <- venn.diagram(list(A673_overexp_gsea$ID, TC71_overexp_gsea$ID
   fill = c("red", "deepskyblue4"), 
   lwd = 1, lty =1)
 
-
-
-overexp_gene_set
-
 grid.draw(overexp_gene_set)
 
 grid.newpage()
@@ -512,8 +504,6 @@ underexp_gene_set <- venn.diagram(list(A673_underexp_gsea$ID, TC71_underexp_gsea
   main = "Overlapping Underexpressed Gene Sets",
   fill = c("red", "deepskyblue4"), 
   lwd = 1, lty =1)
-
-underexp_gene_set
 
 grid.draw(underexp_gene_set)
 ```
@@ -536,12 +526,8 @@ cell_overexp_gsea_list <- list("A673" = A673_overexp_gsea_df, "TC71" = TC71_over
 overexp_genes_data <- lapply(cell_overexp_gsea_list, function(x) {
   (x[x$ID %!in% overexp_gene_overlap, ] %>%
     rownames_to_column("gene_set") %>%
-    dplyr::arrange(rank) %>%
-    dplyr::select(c(
-      -ID, -Description, -setSize,
-      -enrichmentScore, -qvalue, -leading_edge,
-      -core_enrichment
-    )) %>%
+    dplyr::arrange(NES) %>%
+    dplyr::select(c(gene_set, NES, pvalue, p.adjust)) %>%
     dplyr::arrange(desc(NES)))
 })
 
@@ -579,12 +565,8 @@ cell_underexp_gsea_list <- list("A673" = A673_underexp_gsea_df, "TC71" = TC71_un
 underexp_genes_data <- lapply(cell_underexp_gsea_list, function(x) {
   (x[x$ID %!in% underexp_path_overlap, ] %>%
     rownames_to_column("gene_set") %>%
-    dplyr::arrange(rank) %>%
-    dplyr::select(c(
-      -ID, -Description, -setSize,
-      -enrichmentScore, -qvalue, -leading_edge,
-      -core_enrichment
-    )) %>%
+    dplyr::arrange(NES) %>%
+    dplyr::select(c(gene_set, NES, pvalue, p.adjust)) %>%
     dplyr::arrange(desc(NES)))
 })
 
@@ -707,7 +689,12 @@ The PlotCount graphs for our cell lines show that the WT controls do express hig
 The Over- and Under- expressed genes Venn diagrams give us a broad idea of what genes are specific to their cell line and shared between the two. The 4-way plot gives us a closer look at the genes in the samples, we can see what genes are over- and under - expressed for both cell lines and specific cell lines. The genes on the edge of the graph match up to genes listed on the heatmaps.
 
 **Any Notable results?**
-The most notable results I'm curious are from the GSEA results, The two cell lines A673 and TC71 had the same treatment applied to them and both cell lines seem to be relatively similar to each other both are classified as Ewing Sarcoma cell lines, but the GSEA over- & under- Enrichment Venn Diagrams show that they have very little overlapping enriched gene sets (~7-10%) where the A673 showed the most amount of enrichment for both over- & under- compared to TC71. 
+
+With Assistance from Henry, we saw something of note in the enrichr results for the over-expressed genes in the TC71 cell line. In the transcription section under TF Perturbations Followed by Expression, one of the results of note is *FLI1 KD HUMAN GSE27524 CREEDSID GENE 1602 DOWN* This is something we can use to begin an discussion for the relationship between STAG2 and Ewing sarcoma's primary gene EWS-FLI1.
+
+**GSEA uses all the genes in our samples for analysis, while enrichr uses only the significant (Padj \> 0.05) genes. Why?**
+
+GSEA can use all the sample's genes because it doesn't use arbitrary cutoffs for differential expression significance. The genes located around 0 for the stat value are viewed as insignificant compared to both positive and negative ends. However for our enrichr API set up we use the significant DEGs for our analysis because we set up the API to use crisp input so the genes we are providing need to overlap because no additional changes are being conducted before the enrichment analysis.
 
 ## Works Cited
 
